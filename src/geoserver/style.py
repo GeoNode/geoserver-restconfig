@@ -92,11 +92,13 @@ class Style(ResourceInfo):
                 # it is not mandatory
                 title_node = named_layer.find("{http://www.opengis.net/sld}Title")
             except AttributeError:
-                try:
+                title_node = None
+            try:
+                if not title_node: 
                     # it is not mandatory
                     title_node = user_style.find("{http://www.opengis.net/sld}Title")
-                except AttributeError:
-                    pass
+            except AttributeError:
+                pass
 
         return str(title_node.text) if title_node is not None else None
 
