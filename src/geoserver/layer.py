@@ -143,16 +143,16 @@ class Layer(ResourceInfo):
         _resources = self.catalog.get_resources(names=[name], stores=[store_name], workspaces=[ws_name])
         return _resources[0] if len(_resources) > 0 else _resources
 
-    def _get_default_style(self):
+    def _get_default_style(self, recursive=False):
         if 'default_style' in self.dirty:
             return self.dirty['default_style']
         if self.dom is None:
             self.fetch()
         element = self.dom.find("defaultStyle")
         # aborted data uploads can result in no default style
-        return self._resolve_style(element) if element is not None else None
+        return self._resolve_style(element, recursive) if element is not None else None
 
-    def _resolve_style(self, element):
+    def _resolve_style(self, element, recursive=False):
         if ":" in element.find('name').text:
             ws_name, style_name = element.find('name').text.split(':')
         else:
@@ -161,20 +161,20 @@ class Layer(ResourceInfo):
         atom_link = [n for n in element if 'href' in n.attrib]
         if atom_link and ws_name is None:
             ws_name = workspace_from_url(atom_link[0].get("href"))
-        return self.catalog.get_styles(names=style_name, workspaces=ws_name)[0]
+        return self.catalog.get_styles(names=style_name, workspaces=ws_name, recursive=recursive)[0]
 
     def _set_default_style(self, style):
         if isinstance(style, Style):
             style = style.fqn
         self.dirty["default_style"] = style
 
-    def _get_alternate_styles(self):
+    def _get_alternate_styles(self, recursive=False):
         if "alternate_styles" in self.dirty:
             return self.dirty["alternate_styles"]
         if self.dom is None:
             self.fetch()
         styles_list = self.dom.findall("styles/style")
-        return [self._resolve_style(s) for s in styles_list]
+        return [self._resolve_style(s, recursive) for s in styles_list]
 
     def _set_alternate_styles(self, styles):
         self.dirty["alternate_styles"] = styles
@@ -186,6 +186,14 @@ class Layer(ResourceInfo):
     enabled = xml_property("enabled", lambda x: x.text == "true")
     advertised = xml_property("advertised", lambda x: x.text == "true", default=True)
     type = xml_property("type")
+
+    # obtains uncached default style with original format (recursive retrieval)
+    def get_full_default_style(self):
+        return self._get_default_style(True)
+
+    # obtains uncached alternate styles with original format (recursive retrieval)
+    def get_full_styles(self):
+        return self._get_alternate_styles(True)
 
     def _get_attr_attribution(self):
         obj = {
