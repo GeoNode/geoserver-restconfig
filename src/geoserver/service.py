@@ -11,7 +11,7 @@
 #########################################################################
 try:
     from urllib.parse import urljoin
-except:
+except BaseException:
     from urlparse import urljoin
 
 from geoserver.support import (
@@ -174,13 +174,11 @@ class ServiceCommon(ResourceInfo):
     def href(self):
         if self._workspace_name is not None:
             return urljoin(
-                "{url}/".format(url=self.catalog.service_url),
-                "services/{srv}/workspaces/{workspace}/settings".format(
-                    workspace=self._workspace_name, srv=self.resource_type
-                )
+                f"{self.catalog.service_url}/",
+                f"services/{self.resource_type}/workspaces/{self._workspace_name}/settings"
             )
         else:
-            return "{url}/services/{srv}/settings".format(url=self.catalog.service_url, srv=self.resource_type)
+            return f"{self.catalog.service_url}/services/{self.resource_type}/settings"
 
     enabled = xml_property("enabled", lambda x: x.text == 'true')
     name = xml_property("name")

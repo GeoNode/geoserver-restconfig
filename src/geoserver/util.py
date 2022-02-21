@@ -10,4 +10,4 @@
 #########################################################################
 
 def shapefile_and_friends(path):
-    return {ext: path + "." + ext for ext in ['shx', 'shp', 'dbf', 'prj']}
+    return {ext: f"{path}.{ext}" for ext in ['shx', 'shp', 'dbf', 'prj']}

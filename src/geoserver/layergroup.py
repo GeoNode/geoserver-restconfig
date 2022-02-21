@@ -12,7 +12,7 @@
 from six import string_types
 try:
     from urllib.parse import urljoin
-except:
+except BaseException:
     from urlparse import urljoin
 
 from geoserver.support import ResourceInfo, bbox, write_bbox, write_string, xml_property, build_url
@@ -106,12 +106,12 @@ class LayerGroup(ResourceInfo):
 
     @property
     def href(self):
-        path_parts = "layergroups/{}.xml".format(self.name)
+        path_parts = f"layergroups/{self.name}.xml"
         if self.workspace is not None and self.workspace:
             workspace_name = getattr(self.workspace, 'name', self.workspace)
-            path_parts = "workspaces/{}/{}".format(workspace_name, path_parts)
+            path_parts = f"workspaces/{workspace_name}/{path_parts}"
         return urljoin(
-            "{}/".format(self.catalog.service_url),
+            f"{self.catalog.service_url}/",
             path_parts
         )
 
@@ -141,7 +141,7 @@ class LayerGroup(ResourceInfo):
     layers = property(_layers_getter, _layers_setter, _layers_delete)
 
     def __str__(self):
-        return "<LayerGroup {}>".format(self.name)
+        return f"<LayerGroup {self.name}>"
 
     __repr__ = __str__
 

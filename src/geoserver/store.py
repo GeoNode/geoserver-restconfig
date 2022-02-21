@@ -59,7 +59,7 @@ class DataStore(ResourceInfo):
                 "workspaces",
                 self.workspace.name,
                 "datastores",
-                self.name + ".xml"
+                f"{self.name}.xml"
             ]
         )
         return url
@@ -151,7 +151,7 @@ class CoverageStore(ResourceInfo):
                 "workspaces",
                 self.workspace.name,
                 "coveragestores",
-                "{}.xml".format(self.name)
+                f"{self.name}.xml"
             ]
         )
         return url
@@ -237,7 +237,7 @@ class WmsStore(ResourceInfo):
 
     @property
     def href(self):
-        return "%s/workspaces/%s/wmsstores/%s.xml" % (self.catalog.service_url, self.workspace.name, self.name)
+        return f"{self.catalog.service_url}/workspaces/{self.workspace.name}/wmsstores/{self.name}.xml"
 
     enabled = xml_property("enabled", lambda x: x.text == "true")
     name = xml_property("name")
@@ -253,11 +253,7 @@ class WmsStore(ResourceInfo):
                    metadata = write_dict("metadata"))
 
     def get_resources(self, name=None, available=False):
-        res_url = "{}/workspaces/{}/wmsstores/{}/wmslayers.xml".format(
-            self.catalog.service_url,
-            self.workspace.name,
-            self.name
-        )
+        res_url = f"{self.catalog.service_url}/workspaces/{self.workspace.name}/wmsstores/{self.name}/wmslayers.xml"
         layer_name_attr = "wmsLayer"
 
         if available:
@@ -296,4 +292,4 @@ class UnsavedWmsStore(WmsStore):
 
     @property
     def href(self):
-        return "%s/workspaces/%s/wmsstores?name=%s" % (self.catalog.service_url, self.workspace.name, self.name)
+        return f"{self.catalog.service_url}/workspaces/{self.workspace.name}/wmsstores?name={self.name}"

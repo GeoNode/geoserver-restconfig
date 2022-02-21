@@ -65,9 +65,9 @@ def build_url(base, seg, query=None):
     if query is None or len(query) == 0:
         query_string = ''
     else:
-        query_string = "?" + urlencode(query)
+        query_string = f"?{urlencode(query)}"
     path = '/'.join(seg) + query_string
-    adjusted_base = base.rstrip('/') + '/'
+    adjusted_base = f"{base.rstrip('/')}/"
     return urljoin(str(adjusted_base), str(path))
 
 
@@ -85,7 +85,6 @@ def xml_property(path, converter=lambda x: x.text, default=None):
                 return default
         except Exception as e:
             raise AttributeError(e)
-
 
     def setter(self, value):
         self.dirty[path] = value
@@ -256,7 +255,7 @@ def prepare_upload_bundle(name, data):
     fd, path = mkstemp()
     zip_file = ZipFile(path, 'w', allowZip64=True)
     for ext, stream in data.items():
-        fname = "%s.%s" % (name, ext)
+        fname = f"{name}.{ext}"
         if (isinstance(stream, string_types)):
             zip_file.write(stream, fname)
         else:
@@ -313,7 +312,7 @@ def dimension_info(builder, metadata):
         if metadata.presentation is not None:
             accepted = ['LIST', 'DISCRETE_INTERVAL', 'CONTINUOUS_INTERVAL']
             if metadata.presentation not in accepted:
-                raise ValueError("metadata.presentation must be one of the following %s" % accepted)
+                raise ValueError(f"metadata.presentation must be one of the following {accepted}")
             else:
                 builder.start("presentation", dict())
                 builder.data(metadata.presentation)
@@ -386,13 +385,13 @@ class DimensionInfo(object):
         name = name.lower()
         found = [i[1] for i in self._lookup if i[0] == name]
         if not found:
-            raise ValueError('invalid multipler: %s' % name)
+            raise ValueError(f'invalid multipler: {name}')
         return found[0] if found else None
 
     def resolution_millis(self):
         '''if set, get the value of resolution in milliseconds'''
         if self.resolution is None or not isinstance(self.resolution, string_types):
-                return self.resolution
+            return self.resolution
         val, mult = self.resolution.split(' ')
         return int(float(val) * self._multipier(mult) * 1000)
 
@@ -409,7 +408,7 @@ class DimensionInfo(object):
         val = seconds / biggest[1]
         if val == int(val):
             val = int(val)
-        return '%s %s' % (val, biggest[0])
+        return f'{val} {biggest[0]}'
 
 
 def md_dimension_info(name, node):

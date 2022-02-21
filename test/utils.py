@@ -27,7 +27,7 @@ def geoserverLocation():
     port = GSPORT
     server = os.getenv('GSHOSTNAME', server)
     port = os.getenv('GSPORT', port)
-    return '%s:%s' % (server, port)
+    return f'{server}:{port}'
 
 
 def geoserverLocationSsh():
@@ -35,21 +35,21 @@ def geoserverLocationSsh():
     location = geoserverLocation().split(":")[0]
     sshport = GSSSHPORT
     sshport = os.getenv('GSSSHPORT', sshport)
-    return '%s:%s' % (location, sshport)
+    return f'{location}:{sshport}'
 
 
 def serverLocationBasicAuth():
     """Set server URL for http connection."""
-    return "http://" + geoserverLocation() + "/geoserver"
+    return f"http://{geoserverLocation()}/geoserver"
 
 
 def serverLocationPkiAuth():
     """Set server URL for https connection."""
-    return "https://" + geoserverLocationSsh() + "/geoserver"
+    return f"https://{geoserverLocationSsh()}/geoserver"
 
 
 GSPARAMS = dict(
-    GSURL=serverLocationBasicAuth() + '/rest',
+    GSURL=f"{serverLocationBasicAuth()}/rest",
     GSUSER=GSUSER,
     GSPASSWORD=GSPASSWORD,
     GEOSERVER_HOME='',

@@ -12,7 +12,7 @@
 from six import string_types
 try:
     from urllib.parse import urljoin
-except:
+except BaseException:
     from urlparse import urljoin
 
 from geoserver.support import (ResourceInfo, xml_property, write_string, bbox, metadata, write_metadata,
@@ -92,7 +92,7 @@ class _ResourceBase(ResourceInfo):
             parts = href.split('/')
             self._workspace_name = parts[parts.index('workspaces') + 1]
             self._store_name = parts[parts.index(self.url_part_stores) + 1]
-            name = parts[-1].replace('.xml','')
+            name = parts[-1].replace('.xml', '')
         self._href = href
         self.catalog = catalog
         self._workspace = workspace
@@ -121,7 +121,7 @@ class _ResourceBase(ResourceInfo):
                 self.url_part_stores,
                 self.store.name,
                 self.url_part_types,
-                self.name + ".xml"
+                f"{self.name}.xml"
             ]
         )
         return url or self._href
@@ -277,11 +277,8 @@ class WmsLayer(ResourceInfo):
     def href(self):
         # Removed Store from this due to error in the Rest API when including store
         return urljoin(
-            "{}/".format(self.catalog.service_url),
-            "workspaces/{}/wmslayers/{}.xml".format(
-                self.workspace.name,
-                self.name
-            )
+            f"{self.catalog.service_url}/",
+            f"workspaces/{self.workspace.name}/wmslayers/{self.name}.xml"
         )
 
     title = xml_property("title")

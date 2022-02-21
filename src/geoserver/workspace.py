@@ -10,7 +10,7 @@
 #########################################################################
 try:
     from urllib.parse import urljoin
-except:
+except BaseException:
     from urlparse import urljoin
 
 from geoserver.support import ResourceInfo, xml_property, write_bool
@@ -40,29 +40,29 @@ class Workspace(ResourceInfo):
     @property
     def href(self):
         return urljoin(
-            "{}/".format(self.catalog.service_url),
-            "workspaces/{}.xml".format(self.name)
+            f"{self.catalog.service_url}/",
+            f"workspaces/{self.name}.xml"
         )
 
     @property
     def coveragestore_url(self):
         return urljoin(
-            "{}/".format(self.catalog.service_url),
-            "workspaces/{}/coveragestores.xml".format(self.name)
+            f"{self.catalog.service_url}/",
+            f"workspaces/{self.name}/coveragestores.xml"
         )
 
     @property
     def datastore_url(self):
         return urljoin(
-            "{}/".format(self.catalog.service_url),
-            "workspaces/{}/datastores.xml".format(self.name)
+            f"{self.catalog.service_url}/",
+            f"workspaces/{self.name}/datastores.xml"
         )
 
     @property
     def wmsstore_url(self):
         return urljoin(
-            "{}/".format(self.catalog.service_url),
-            "workspaces/{}/wmsstores.xml".format(self.name)
+            f"{self.catalog.service_url}/",
+            f"workspaces/{self.name}/wmsstores.xml"
         )
 
     enabled = xml_property("enabled", lambda x: x.lower() == 'true')
@@ -71,4 +71,4 @@ class Workspace(ResourceInfo):
     }
 
     def __repr__(self):
-        return "{} @ {}".format(self.name, self.href)
+        return f"{self.name} @ {self.href}"

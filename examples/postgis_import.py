@@ -25,5 +25,5 @@ ds.connection_parameters.update(
 
 cat.save(ds)
 ds = cat.get_store(name)
-components = dict((ext, "myfile." + ext) for ext in ["shp", "prj", "shx", "dbf"])
+components = dict((ext, f"myfile.{ext}") for ext in ["shp", "prj", "shx", "dbf"])
 cat.add_data_to_store(ds, "mylayer", components)

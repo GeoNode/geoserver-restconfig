@@ -43,7 +43,7 @@ class Style(ResourceInfo):
     def fqn(self):
         if not self.workspace:
             return self.name
-        return '{}:{}'.format(self.workspace, self.name)
+        return f'{self.workspace}:{self.name}'
 
     @property
     def href(self):
@@ -94,7 +94,7 @@ class Style(ResourceInfo):
             except AttributeError:
                 title_node = None
             try:
-                if not title_node: 
+                if not title_node:
                     # it is not mandatory
                     title_node = user_style.find("{http://www.opengis.net/sld}Title")
             except AttributeError:
@@ -139,7 +139,7 @@ class Style(ResourceInfo):
             }
         else:
             # [:-2] remove version tag from type. GeoServer does not accept it
-            href_ext = '.{}'.format(self.style_format[:-2])
+            href_ext = f'.{self.style_format[:-2]}'
         resp = self.catalog.http_request(
             self._build_href(href_ext),
             headers = _headers

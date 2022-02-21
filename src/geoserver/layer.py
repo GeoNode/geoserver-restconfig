@@ -10,7 +10,7 @@
 #########################################################################
 try:
     from urllib.parse import urljoin
-except:
+except BaseException:
     from urlparse import urljoin
 
 from geoserver.support import (
@@ -125,8 +125,8 @@ class Layer(ResourceInfo):
     @property
     def href(self):
         return urljoin(
-            "{}/".format(self.catalog.service_url),
-            "layers/{}.xml".format(self.name)
+            f"{self.catalog.service_url}/",
+            f"layers/{self.name}.xml"
         )
 
     @property

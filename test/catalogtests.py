@@ -43,33 +43,31 @@ if GSPARAMS['GEOSERVER_HOME']:
     dest = GSPARAMS['DATA_DIR']
     data = os.path.join(GSPARAMS['GEOSERVER_HOME'], 'data/release', '')
     if dest:
-        os.system('rsync -v -a --delete %s %s' %
-                  (data, os.path.join(dest, '')))
+        os.system(f"rsync -v -a --delete {data} {os.path.join(dest, '')}")
     else:
-        os.system('git clean -dxf -- %s' % data)
-    os.system("curl -XPOST --user '{user}':'{password}' '{url}/reload'".format(
-        user=GSPARAMS['GSUSER'], password=GSPARAMS['GSPASSWORD'], url=GSPARAMS['GSURL']))
+        os.system(f'git clean -dxf -- {data}')
+    os.system(f"curl -XPOST --user '{GSPARAMS['GSUSER']}':'{GSPARAMS['GSPASSWORD']}' '{GSPARAMS['GSURL']}/reload'")
 
 # set GS_VERSION to None in order to skip the GeoServer setup
 global child_pid
 child_pid = None
 # use "master" in order to test against the latest GeoServer version
 if GSPARAMS['GS_VERSION']:
-    subprocess.Popen(["rm", "-rf", GSPARAMS['GS_BASE_DIR'] + "/gs"]).communicate()
-    subprocess.Popen(["mkdir", GSPARAMS['GS_BASE_DIR'] + "/gs"]).communicate()
+    subprocess.Popen(["rm", "-rf", f"{GSPARAMS['GS_BASE_DIR']}/gs"]).communicate()
+    subprocess.Popen(["mkdir", f"{GSPARAMS['GS_BASE_DIR']}/gs"]).communicate()
     subprocess.Popen(
         [
             "wget",
             "http://central.maven.org/maven2/org/eclipse/jetty/jetty-runner/9.4.5.v20170502/jetty-runner-9.4.5.v20170502.jar",
-            "-P", GSPARAMS['GS_BASE_DIR'] + "/gs"
+            "-P", f"{GSPARAMS['GS_BASE_DIR']}/gs"
         ]
     ).communicate()
 
     subprocess.Popen(
         [
             "wget",
-            "https://build.geoserver.org/geoserver/" + GSPARAMS['GS_VERSION'] + "/geoserver-" + GSPARAMS['GS_VERSION'] + "-latest-war.zip",
-            "-P", GSPARAMS['GS_BASE_DIR'] + "/gs"
+            f"https://build.geoserver.org/geoserver/{GSPARAMS['GS_VERSION']}/geoserver-{GSPARAMS['GS_VERSION']}-latest-war.zip",
+            "-P", f"{GSPARAMS['GS_BASE_DIR']}/gs"
         ]
     ).communicate()
 
@@ -78,8 +76,8 @@ if GSPARAMS['GS_VERSION']:
             "unzip",
             "-o",
             "-d",
-            GSPARAMS['GS_BASE_DIR'] + "/gs",
-            GSPARAMS['GS_BASE_DIR'] + "/gs/geoserver-" + GSPARAMS['GS_VERSION'] + "-latest-war.zip"
+            f"{GSPARAMS['GS_BASE_DIR']}/gs",
+            f"{GSPARAMS['GS_BASE_DIR']}/gs/geoserver-{GSPARAMS['GS_VERSION']}-latest-war.zip"
         ]
     ).communicate()
 
@@ -92,15 +90,15 @@ if GSPARAMS['GS_VERSION']:
     else:
         java_executable = "/usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java"
 
-    print("geoserver_short_version: {}".format(geoserver_short_version))
-    print("java_executable: {}".format(java_executable))
+    print(f"geoserver_short_version: {geoserver_short_version}")
+    print(f"java_executable: {java_executable}")
     proc = subprocess.Popen(
         [
             java_executable,
             "-Xmx1024m",
             "-Dorg.eclipse.jetty.server.webapp.parentLoaderPriority=true",
-            "-jar", GSPARAMS['GS_BASE_DIR'] + "/gs/jetty-runner-9.4.5.v20170502.jar",
-            "--path", "/geoserver", GSPARAMS['GS_BASE_DIR'] + "/gs/geoserver.war"
+            "-jar", f"{GSPARAMS['GS_BASE_DIR']}/gs/jetty-runner-9.4.5.v20170502.jar",
+            "--path", "/geoserver", f"{GSPARAMS['GS_BASE_DIR']}/gs/geoserver.war"
         ],
         stdout=FNULL, stderr=subprocess.STDOUT
     )
@@ -113,8 +111,8 @@ def kill_child():
     if child_pid is None:
         pass
     else:
-        subprocess.Popen(["rm", "-Rf", GSPARAMS['GS_BASE_DIR'] + "/gs"]).communicate()
-        print("KILLING PROCESS: " + str(child_pid))
+        subprocess.Popen(["rm", "-Rf", f"{GSPARAMS['GS_BASE_DIR']}/gs"]).communicate()
+        print(f"KILLING PROCESS: {str(child_pid)}")
         os.kill(child_pid, signal.SIGTERM)
 
 
@@ -129,7 +127,7 @@ def drop_table(table):
             finally:
                 try:
                     if conn:
-                        conn.cursor().execute('DROP TABLE %s' % table)
+                        conn.cursor().execute(f'DROP TABLE {table}')
                 except Exception as e:
                     print('ERROR dropping table')
                     print(e)
@@ -145,7 +143,7 @@ class NonCatalogTests(unittest.TestCase):
         self.assertTrue(inf.resolution_millis() is None)
         self.assertTrue(inf.resolution_str() is None)
 
-        inf = lambda r: DimensionInfo(None, None, None, r, None, None)
+        def inf(r): return DimensionInfo(None, None, None, r, None, None)
 
         def assertEqualResolution(spec, millis):
             self.assertEqual(millis, inf(spec).resolution_millis())
@@ -163,7 +161,7 @@ class CatalogTests(unittest.TestCase):
 
     def testGSVersion(self):
         version = self.cat.get_version()
-        pat = re.compile('\d\.\d+')
+        pat = re.compile('\\d\\.\\d+')
         self.assertTrue(pat.match('2.2.x'))
         self.assertTrue(pat.match('2.3.2'))
         self.assertTrue(pat.match('2.3-SNAPSHOT'))
@@ -304,7 +302,7 @@ class CatalogTests(unittest.TestCase):
         actual = set(l.name for l in self.cat.get_layers())
         missing = expected - actual
         extras = actual - expected
-        message = "Actual layer list did not match expected! (Extras: %s) (Missing: %s)" % (extras, missing)
+        message = f"Actual layer list did not match expected! (Extras: {extras}) (Missing: {missing})"
         self.assert_(len(expected ^ actual) == 0, message)
 
         states = self.cat.get_layer("states")
@@ -319,7 +317,7 @@ class CatalogTests(unittest.TestCase):
         actual = set(l.name for l in self.cat.get_layergroups(names=["tasmania", "tiger-ny", "spearfish"]))
         missing = expected - actual
         extras = actual - expected
-        message = "Actual layergroup list did not match expected! (Extras: %s) (Missing: %s)" % (extras, missing)
+        message = f"Actual layergroup list did not match expected! (Extras: {extras}) (Missing: {missing})"
         self.assert_(len(expected ^ actual) == 0, message)
 
         tas = self.cat.get_layergroups(names="tasmania")[0]
@@ -394,12 +392,12 @@ class CatalogTests(unittest.TestCase):
         # Test the url function with unicode
         seg = ['workspaces', 'test', 'datastores', u'operaci\xf3n_repo', 'featuretypes.xml']
         u = build_url(base=self.cat.service_url, seg=seg)
-        self.assertEqual(u, self.cat.service_url + "/workspaces/test/datastores/operaci%C3%B3n_repo/featuretypes.xml")
+        self.assertEqual(u, f"{self.cat.service_url}/workspaces/test/datastores/operaci%C3%B3n_repo/featuretypes.xml")
 
         # Test the url function with normal string
         seg = ['workspaces', 'test', 'datastores', 'test-repo', 'featuretypes.xml']
         u = build_url(base=self.cat.service_url, seg=seg)
-        self.assertEqual(u, self.cat.service_url + "/workspaces/test/datastores/test-repo/featuretypes.xml")
+        self.assertEqual(u, f"{self.cat.service_url}/workspaces/test/datastores/test-repo/featuretypes.xml")
 
 
 class ModifyingTests(unittest.TestCase):
@@ -481,7 +479,7 @@ class ModifyingTests(unittest.TestCase):
                     self.cat.delete(lyr.resource)
                 if ds:
                     self.cat.delete(ds)
-            except:
+            except BaseException:
                 pass
 
     def testDataStoreModify(self):
@@ -835,7 +833,7 @@ class ModifyingTests(unittest.TestCase):
 
     def testDataStoreDelete(self):
         states = self.cat.get_stores('states_shapefile')[0]
-        self.assert_(states.enabled == True)
+        self.assert_(states.enabled)
         states.enabled = False
         self.assert_(states.enabled == False)
         self.cat.save(states)
@@ -847,7 +845,7 @@ class ModifyingTests(unittest.TestCase):
         self.cat.save(states)
 
         states = self.cat.get_stores('states_shapefile')[0]
-        self.assert_(states.enabled == True)
+        self.assert_(states.enabled)
 
     def testLayerGroupSave(self):
         tas = self.cat.get_layergroups("tasmania")[0]
@@ -924,7 +922,7 @@ class ModifyingTests(unittest.TestCase):
         store = self.cat.get_stores(name)[0]
         granules = self.cat.list_granules(coverage, store)
         self.assertEqual(1, len(granules['features']))
-        granule_id = name + '.1'
+        granule_id = f"{name}.1"
         self.cat.delete_granule(coverage, store, granule_id)
         granules = self.cat.list_granules(coverage, store)
         self.assertEqual(0, len(granules['features']))
@@ -961,7 +959,7 @@ class ModifyingTests(unittest.TestCase):
         files = shapefile_and_friends(os.path.join(gisdata.GOOD_DATA, "time", "boxes_with_end_date"))
         self.cat.create_featurestore("boxes_with_end_date", files, sf)
 
-        get_resource = lambda: self.cat._cache.clear() or self.cat.get_layer('boxes_with_end_date').resource
+        def get_resource(): return self.cat._cache.clear() or self.cat.get_layer('boxes_with_end_date').resource
 
         # configure time as LIST
         resource = get_resource()

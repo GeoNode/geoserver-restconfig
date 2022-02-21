@@ -2,41 +2,47 @@ import unittest
 import string
 import random
 import os
-from .utils import DBPARAMS
-from .utils import GSPARAMS
 import subprocess
 import re
 import time
 from geoserver.catalog import Catalog
+from .utils import DBPARAMS
+from .utils import GSPARAMS
+
+try:
+    import psycopg2
+    # only used for connection sanity if present
+    conn = psycopg2.connect(('dbname=%(database)s user=%(user)s password=%(passwd)s'
+                             ' port=%(port)s host=%(host)s'
+                             ) % DBPARAMS)
+except ImportError:
+    pass
 
 if GSPARAMS['GEOSERVER_HOME']:
     dest = GSPARAMS['DATA_DIR']
     data = os.path.join(GSPARAMS['GEOSERVER_HOME'], 'data/release', '')
     if dest:
-        os.system('rsync -v -a --delete %s %s' %
-                  (data, os.path.join(dest, '')))
+        os.system(f"rsync -v -a --delete {data} {os.path.join(dest, '')}")
     else:
-        os.system('git clean -dxf -- %s' % data)
-    os.system("curl -XPOST --user '{user}':'{password}' '{url}/reload'".format(
-        user=GSPARAMS['GSUSER'], password=GSPARAMS['GSPASSWORD'], url=GSPARAMS['GSURL']))
+        os.system(f'git clean -dxf -- {data}')
+    os.system(f"curl -XPOST --user '{GSPARAMS['GSUSER']}':'{GSPARAMS['GSPASSWORD']}' '{GSPARAMS['GSURL']}/reload'")
 
 if GSPARAMS['GS_VERSION']:
-    subprocess.Popen(["rm", "-rf", GSPARAMS['GS_BASE_DIR'] + "/gs"]).communicate()
-    subprocess.Popen(["mkdir", GSPARAMS['GS_BASE_DIR'] + "/gs"]).communicate()
+    subprocess.Popen(["rm", "-rf", f"{GSPARAMS['GS_BASE_DIR']}/gs"]).communicate()
+    subprocess.Popen(["mkdir", f"{GSPARAMS['GS_BASE_DIR']}/gs"]).communicate()
     subprocess.Popen(
         [
             "wget",
             "http://central.maven.org/maven2/org/eclipse/jetty/jetty-runner/9.4.5.v20170502/jetty-runner-9.4.5.v20170502.jar",
-            "-P", GSPARAMS['GS_BASE_DIR'] + "/gs"
+            "-P", f"{GSPARAMS['GS_BASE_DIR']}/gs"
         ]
     ).communicate()
 
     subprocess.Popen(
         [
             "wget",
-            "https://build.geoserver.org/geoserver/" + GSPARAMS['GS_VERSION'] + "/geoserver-" + GSPARAMS[
-                'GS_VERSION'] + "-latest-war.zip",
-            "-P", GSPARAMS['GS_BASE_DIR'] + "/gs"
+            f"https://build.geoserver.org/geoserver/{GSPARAMS['GS_VERSION']}/geoserver-{GSPARAMS['GS_VERSION']}-latest-war.zip",
+            "-P", f"{GSPARAMS['GS_BASE_DIR']}/gs"
         ]
     ).communicate()
 
@@ -45,8 +51,8 @@ if GSPARAMS['GS_VERSION']:
             "unzip",
             "-o",
             "-d",
-            GSPARAMS['GS_BASE_DIR'] + "/gs",
-            GSPARAMS['GS_BASE_DIR'] + "/gs/geoserver-" + GSPARAMS['GS_VERSION'] + "-latest-war.zip"
+            f"{GSPARAMS['GS_BASE_DIR']}/gs",
+            f"{GSPARAMS['GS_BASE_DIR']}/gs/geoserver-{GSPARAMS['GS_VERSION']}-latest-war.zip"
         ]
     ).communicate()
 
@@ -59,15 +65,15 @@ if GSPARAMS['GS_VERSION']:
     else:
         java_executable = "/usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java"
 
-    print("geoserver_short_version: {}".format(geoserver_short_version))
-    print("java_executable: {}".format(java_executable))
+    print(f"geoserver_short_version: {geoserver_short_version}")
+    print(f"java_executable: {java_executable}")
     proc = subprocess.Popen(
         [
             java_executable,
             "-Xmx1024m",
             "-Dorg.eclipse.jetty.server.webapp.parentLoaderPriority=true",
-            "-jar", GSPARAMS['GS_BASE_DIR'] + "/gs/jetty-runner-9.4.5.v20170502.jar",
-            "--path", "/geoserver", GSPARAMS['GS_BASE_DIR'] + "/gs/geoserver.war"
+            "-jar", f"{GSPARAMS['GS_BASE_DIR']}/gs/jetty-runner-9.4.5.v20170502.jar",
+            "--path", "/geoserver", f"{GSPARAMS['GS_BASE_DIR']}/gs/geoserver.war"
         ],
         stdout=FNULL, stderr=subprocess.STDOUT
     )
@@ -127,13 +133,13 @@ class ServicesTests(unittest.TestCase):
             setattr(wms_srv, attr, False)
             self.cat.save(wms_srv)
             wms_srv.refresh()
-            self.assertIsNone(wms_srv.dirty.get(attr), msg="Attribute {} still in dirty list".format(attr))
+            self.assertIsNone(wms_srv.dirty.get(attr), msg=f"Attribute {attr} still in dirty list")
             self.assertFalse(getattr(wms_srv, attr))
             setattr(wms_srv, attr, True)
             self.cat.save(wms_srv)
             wms_srv.refresh()
-            self.assertIsNone(wms_srv.dirty.get(attr), msg="Attribute {} still in dirty list".format(attr))
-            self.assertTrue(getattr(wms_srv, attr), msg="Invalid value for object {}".format(attr))
+            self.assertIsNone(wms_srv.dirty.get(attr), msg=f"Attribute {attr} still in dirty list")
+            self.assertTrue(getattr(wms_srv, attr), msg=f"Invalid value for object {attr}")
 
         # test string
         attrs = [k for k, v in wms_srv.writers.items() if
@@ -143,8 +149,8 @@ class ServicesTests(unittest.TestCase):
             setattr(wms_srv, attr, test_str)
             self.cat.save(wms_srv)
             wms_srv.refresh()
-            self.assertIsNone(wms_srv.dirty.get(attr), msg="Attribute {} still in dirty list".format(attr))
-            self.assertEqual(getattr(wms_srv, attr), test_str, msg="Invalid value for object {}".format(attr))
+            self.assertIsNone(wms_srv.dirty.get(attr), msg=f"Attribute {attr} still in dirty list")
+            self.assertEqual(getattr(wms_srv, attr), test_str, msg=f"Invalid value for object {attr}")
 
         # test enums
         attrs = [k for k in self.wms_enums.keys()]
@@ -153,18 +159,18 @@ class ServicesTests(unittest.TestCase):
             setattr(wms_srv, attr, test_str)
             self.cat.save(wms_srv)
             wms_srv.refresh()
-            self.assertIsNone(wms_srv.dirty.get(attr), msg="Attribute {} still in dirty list".format(attr))
-            self.assertEqual(getattr(wms_srv, attr), test_str, msg="Invalid value for object {}".format(attr))
+            self.assertIsNone(wms_srv.dirty.get(attr), msg=f"Attribute {attr} still in dirty list")
+            self.assertEqual(getattr(wms_srv, attr), test_str, msg=f"Invalid value for object {attr}")
 
         # test int
-        attrs = [k for k in wms_srv.writers.keys() if type(getattr(wms_srv, k)) == int]
+        attrs = [k for k in wms_srv.writers.keys() if isinstance(getattr(wms_srv, k), int)]
         for attr in attrs:
             test_int = random.randint(1, 20)
             setattr(wms_srv, attr, test_int)
             self.cat.save(wms_srv)
             wms_srv.refresh()
-            self.assertIsNone(wms_srv.dirty.get(attr), msg="Attribute {} still in dirty list".format(attr))
-            self.assertEqual(getattr(wms_srv, attr), test_int, msg="Invalid value for object {}".format(attr))
+            self.assertIsNone(wms_srv.dirty.get(attr), msg=f"Attribute {attr} still in dirty list")
+            self.assertEqual(getattr(wms_srv, attr), test_int, msg=f"Invalid value for object {attr}")
 
     def test_global_wfs(self):
 
@@ -177,13 +183,13 @@ class ServicesTests(unittest.TestCase):
             setattr(wfs_srv, attr, False)
             self.cat.save(wfs_srv)
             wfs_srv.refresh()
-            self.assertIsNone(wfs_srv.dirty.get(attr), msg="Attribute {} still in dirty list".format(attr))
+            self.assertIsNone(wfs_srv.dirty.get(attr), msg=f"Attribute {attr} still in dirty list")
             self.assertFalse(getattr(wfs_srv, attr))
             setattr(wfs_srv, attr, True)
             self.cat.save(wfs_srv)
             wfs_srv.refresh()
-            self.assertIsNone(wfs_srv.dirty.get(attr), msg="Attribute {} still in dirty list".format(attr))
-            self.assertTrue(getattr(wfs_srv, attr), msg="Invalid value for object {}".format(attr))
+            self.assertIsNone(wfs_srv.dirty.get(attr), msg=f"Attribute {attr} still in dirty list")
+            self.assertTrue(getattr(wfs_srv, attr), msg=f"Invalid value for object {attr}")
 
         # test string
         attrs = [k for k, v in wfs_srv.writers.items() if
@@ -193,8 +199,8 @@ class ServicesTests(unittest.TestCase):
             setattr(wfs_srv, attr, test_str)
             self.cat.save(wfs_srv)
             wfs_srv.refresh()
-            self.assertIsNone(wfs_srv.dirty.get(attr), msg="Attribute {} still in dirty list".format(attr))
-            self.assertEqual(getattr(wfs_srv, attr), test_str, msg="Invalid value for object {}".format(attr))
+            self.assertIsNone(wfs_srv.dirty.get(attr), msg=f"Attribute {attr} still in dirty list")
+            self.assertEqual(getattr(wfs_srv, attr), test_str, msg=f"Invalid value for object {attr}")
 
         # test enums
         attrs = [k for k in self.wfs_enums.keys()]
@@ -203,18 +209,18 @@ class ServicesTests(unittest.TestCase):
             setattr(wfs_srv, attr, test_str)
             self.cat.save(wfs_srv)
             wfs_srv.refresh()
-            self.assertIsNone(wfs_srv.dirty.get(attr), msg="Attribute {} still in dirty list".format(attr))
-            self.assertEqual(getattr(wfs_srv, attr), test_str, msg="Invalid value for object {}".format(attr))
+            self.assertIsNone(wfs_srv.dirty.get(attr), msg=f"Attribute {attr} still in dirty list")
+            self.assertEqual(getattr(wfs_srv, attr), test_str, msg=f"Invalid value for object {attr}")
 
         # test int
-        attrs = [k for k in wfs_srv.writers.keys() if type(getattr(wfs_srv, k)) == int]
+        attrs = [k for k in wfs_srv.writers.keys() if isinstance(getattr(wfs_srv, k), int)]
         for attr in attrs:
             test_int = random.randint(1, 20)
             setattr(wfs_srv, attr, test_int)
             self.cat.save(wfs_srv)
             wfs_srv.refresh()
-            self.assertIsNone(wfs_srv.dirty.get(attr), msg="Attribute {} still in dirty list".format(attr))
-            self.assertEqual(getattr(wfs_srv, attr), test_int, msg="Invalid value for object {}".format(attr))
+            self.assertIsNone(wfs_srv.dirty.get(attr), msg=f"Attribute {attr} still in dirty list")
+            self.assertEqual(getattr(wfs_srv, attr), test_int, msg=f"Invalid value for object {attr}")
 
     def test_global_wcs(self):
 
@@ -227,13 +233,13 @@ class ServicesTests(unittest.TestCase):
             setattr(wcs_srv, attr, False)
             self.cat.save(wcs_srv)
             wcs_srv.refresh()
-            self.assertIsNone(wcs_srv.dirty.get(attr), msg="Attribute {} still in dirty list".format(attr))
+            self.assertIsNone(wcs_srv.dirty.get(attr), msg=f"Attribute {attr} still in dirty list")
             self.assertFalse(getattr(wcs_srv, attr))
             setattr(wcs_srv, attr, True)
             self.cat.save(wcs_srv)
             wcs_srv.refresh()
-            self.assertIsNone(wcs_srv.dirty.get(attr), msg="Attribute {} still in dirty list".format(attr))
-            self.assertTrue(getattr(wcs_srv, attr), msg="Invalid value for object {}".format(attr))
+            self.assertIsNone(wcs_srv.dirty.get(attr), msg=f"Attribute {attr} still in dirty list")
+            self.assertTrue(getattr(wcs_srv, attr), msg=f"Invalid value for object {attr}")
 
         # test string
         attrs = [k for k, v in wcs_srv.writers.items() if
@@ -243,8 +249,8 @@ class ServicesTests(unittest.TestCase):
             setattr(wcs_srv, attr, test_str)
             self.cat.save(wcs_srv)
             wcs_srv.refresh()
-            self.assertIsNone(wcs_srv.dirty.get(attr), msg="Attribute {} still in dirty list".format(attr))
-            self.assertEqual(getattr(wcs_srv, attr), test_str, msg="Invalid value for object {}".format(attr))
+            self.assertIsNone(wcs_srv.dirty.get(attr), msg=f"Attribute {attr} still in dirty list")
+            self.assertEqual(getattr(wcs_srv, attr), test_str, msg=f"Invalid value for object {attr}")
 
         # test enums
         attrs = [k for k in self.wcs_enums.keys()]
@@ -253,18 +259,18 @@ class ServicesTests(unittest.TestCase):
             setattr(wcs_srv, attr, test_str)
             self.cat.save(wcs_srv)
             wcs_srv.refresh()
-            self.assertIsNone(wcs_srv.dirty.get(attr), msg="Attribute {} still in dirty list".format(attr))
-            self.assertEqual(getattr(wcs_srv, attr), test_str, msg="Invalid value for object {}".format(attr))
+            self.assertIsNone(wcs_srv.dirty.get(attr), msg=f"Attribute {attr} still in dirty list")
+            self.assertEqual(getattr(wcs_srv, attr), test_str, msg=f"Invalid value for object {attr}")
 
         # test int
-        attrs = [k for k in wcs_srv.writers.keys() if type(getattr(wcs_srv, k)) == int]
+        attrs = [k for k in wcs_srv.writers.keys() if isinstance(getattr(wcs_srv, k), int)]
         for attr in attrs:
             test_int = random.randint(1, 20)
             setattr(wcs_srv, attr, test_int)
             self.cat.save(wcs_srv)
             wcs_srv.refresh()
-            self.assertIsNone(wcs_srv.dirty.get(attr), msg="Attribute {} still in dirty list".format(attr))
-            self.assertEqual(getattr(wcs_srv, attr), test_int, msg="Invalid value for object {}".format(attr))
+            self.assertIsNone(wcs_srv.dirty.get(attr), msg=f"Attribute {attr} still in dirty list")
+            self.assertEqual(getattr(wcs_srv, attr), test_int, msg=f"Invalid value for object {attr}")
 
     def test_global_wmts(self):
 
@@ -277,13 +283,13 @@ class ServicesTests(unittest.TestCase):
             setattr(wmts_srv, attr, False)
             self.cat.save(wmts_srv)
             wmts_srv.refresh()
-            self.assertIsNone(wmts_srv.dirty.get(attr), msg="Attribute {} still in dirty list".format(attr))
+            self.assertIsNone(wmts_srv.dirty.get(attr), msg=f"Attribute {attr} still in dirty list")
             self.assertFalse(getattr(wmts_srv, attr))
             setattr(wmts_srv, attr, True)
             self.cat.save(wmts_srv)
             wmts_srv.refresh()
-            self.assertIsNone(wmts_srv.dirty.get(attr), msg="Attribute {} still in dirty list".format(attr))
-            self.assertTrue(getattr(wmts_srv, attr), msg="Invalid value for object {}".format(attr))
+            self.assertIsNone(wmts_srv.dirty.get(attr), msg=f"Attribute {attr} still in dirty list")
+            self.assertTrue(getattr(wmts_srv, attr), msg=f"Invalid value for object {attr}")
 
         # test string
         attrs = [k for k, v in wmts_srv.writers.items() if
@@ -293,8 +299,8 @@ class ServicesTests(unittest.TestCase):
             setattr(wmts_srv, attr, test_str)
             self.cat.save(wmts_srv)
             wmts_srv.refresh()
-            self.assertIsNone(wmts_srv.dirty.get(attr), msg="Attribute {} still in dirty list".format(attr))
-            self.assertEqual(getattr(wmts_srv, attr), test_str, msg="Invalid value for object {}".format(attr))
+            self.assertIsNone(wmts_srv.dirty.get(attr), msg=f"Attribute {attr} still in dirty list")
+            self.assertEqual(getattr(wmts_srv, attr), test_str, msg=f"Invalid value for object {attr}")
 
         # test enums
         attrs = [k for k in self.wmts_enums.keys()]
@@ -303,18 +309,18 @@ class ServicesTests(unittest.TestCase):
             setattr(wmts_srv, attr, test_str)
             self.cat.save(wmts_srv)
             wmts_srv.refresh()
-            self.assertIsNone(wmts_srv.dirty.get(attr), msg="Attribute {} still in dirty list".format(attr))
-            self.assertEqual(getattr(wmts_srv, attr), test_str, msg="Invalid value for object {}".format(attr))
+            self.assertIsNone(wmts_srv.dirty.get(attr), msg=f"Attribute {attr} still in dirty list")
+            self.assertEqual(getattr(wmts_srv, attr), test_str, msg=f"Invalid value for object {attr}")
 
         # test int
-        attrs = [k for k in wmts_srv.writers.keys() if type(getattr(wmts_srv, k)) == int]
+        attrs = [k for k in wmts_srv.writers.keys() if isinstance(getattr(wmts_srv, k), int)]
         for attr in attrs:
             test_int = random.randint(1, 20)
             setattr(wmts_srv, attr, test_int)
             self.cat.save(wmts_srv)
             wmts_srv.refresh()
-            self.assertIsNone(wmts_srv.dirty.get(attr), msg="Attribute {} still in dirty list".format(attr))
-            self.assertEqual(getattr(wmts_srv, attr), test_int, msg="Invalid value for object {}".format(attr))
+            self.assertIsNone(wmts_srv.dirty.get(attr), msg=f"Attribute {attr} still in dirty list")
+            self.assertEqual(getattr(wmts_srv, attr), test_int, msg=f"Invalid value for object {attr}")
 
 
 if __name__ == '__main__':
