@@ -288,7 +288,6 @@ class Catalog(object):
         netloc = urlparse(self.service_url).netloc
         rest_url = href._replace(netloc=netloc).geturl()
         data = obj.message()
-        print(data)
 
         headers = {
             "Content-type": content_type,
