@@ -40,15 +40,24 @@ def _style_list(node):
         return [_maybe_text(n.find("name")) for n in node.findall("style")]
 
 
-def _write_layers(builder, layers, parent, element, attributes):
+def _write_layers(builder, layers, parent, element, attributes = None):
     builder.start(parent, dict())
     for l in layers:
-        builder.start(element, attributes or dict())
+        _name = None
+        _attributes = attributes or dict()
         if l is not None:
-            builder.start("name", dict())
-            builder.data(l)
-            builder.end("name")
-        builder.end(element)
+            if isinstance (l, dict):
+                _name = l.get('name', None)
+                _attributes = l.get('attributes', _attributes)
+            else:
+                _name = l
+        if _name:
+            builder.start(element, _attributes)
+            if l is not None:
+                builder.start("name", dict())
+                builder.data(_name)
+                builder.end("name")
+            builder.end(element)
     builder.end(parent)
 
 
@@ -151,17 +160,17 @@ class UnsavedLayerGroup(LayerGroup):
 
     def __init__(self, catalog, name, layers, styles, bounds, mode, abstract, title, workspace = None):
         super(UnsavedLayerGroup, self).__init__(catalog, name, workspace=workspace)
-        bounds = bounds if bounds is not None else ("-180", "180", "-90", "90", "EPSG:4326")
         self.dirty.update(
             name = name,
             layers = layers,
             styles = styles,
-            bounds = bounds,
             workspace = workspace,
             mode = mode.upper(),
             abstractTxt = abstract,
             title = title
         )
+        if bounds is not None:
+            self.dirty.update(bounds = bounds)
 
     @property
     def href(self):
