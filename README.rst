@@ -185,7 +185,41 @@ It is possible to create JDBC Virtual Layers too. The code below allow to create
 
     jdbc_vt = JDBCVirtualTable(ft_name, sql, 'false', geom, keyColumn, parameters)
     ft = cat.publish_featuretype(ft_name, store, epsg_code, jdbc_virtual_table=jdbc_vt)
+
+The next example shows how to create a ``PostGIS JNDI`` datastore (connection_parameters come from another example. 
+Settings might be different depending on your needs):
+
+.. code-block:: python
+
+    cat = Catalog('http://localhost:8080/geoserver/rest/', 'admin', '****')
+    datastore_name = 'sample_jndi_store'
     
+    dstore = cat.get_store(name = datastore_name, workspace=metadata[WS])
+    # Let's check that the store doesn't already exist
+    if ds_store is None:
+        ws = 'my_workspace'
+        dstore = cat.create_datastore(workspace=ws, name = datastore_name)
+        connection_parameters= {
+            'type': 'PostGIS (JNDI)', 
+            'schema': 'my_schema', 
+            'Estimated extends': 'true', 
+            'fetch size': '1000', 
+            'encode functions': 'true', 
+            'Expose primary keys': 'false', 
+            'Support on the fly geometry simplification': 'true', 
+            'Batch insert size': '1', 
+            'preparedStatements': 'false', 
+            'Support on the fly geometry simplification, preserving topology': 'true', 
+            'jndiReferenceName': 'java:comp/env/jdbc/geodb', 
+            'dbtype': 'postgis', 
+            'namespace': 'my_workspace', 
+            'Loose bbox': 'true'
+        }
+        dstore.connection_parameters.update(connection_parameters)
+        cat.save(dstore)
+        assert dstore.enabled
+        return dstore
+
 This example shows how to easily update a ``layer`` property. The same approach may be used with every ``catalog`` resource
 
 .. code-block:: python
@@ -204,6 +238,13 @@ Deleting a ``store`` from the ``catalog`` requires to purge all the associated `
     cat.reload()
     cat.delete(st)
     cat.reload()
+
+Alternatively, you can delete a ``store`` as well as all the underlying ``layers`` in one shot, like this:
+
+.. code-block:: python
+
+    store = cat.get_store("ne_shaded")
+    cat.delete(store, purge=True, recurse=True)
 
 There are some functionalities allowing to manage the ``ImageMosaic`` coverages. It is possible to create new ImageMosaics, add granules to them,
 and also read the coverages metadata, modify the mosaic ``Dimensions`` and finally query the mosaic ``granules`` and list their properties.
@@ -295,3 +336,46 @@ When the mosaic grows up and starts having a huge set of granules, you may need 
     granules = cat.list_granules(coverages['coverages']['coverage'][0]['name'], store, "time >= '2013-10-01T03:00:00.000Z'")
     granules = cat.list_granules(coverages['coverages']['coverage'][0]['name'], store, "time >= '2013-10-01T03:00:00.000Z' AND run = 0")
     granules = cat.list_granules(coverages['coverages']['coverage'][0]['name'], store, "location LIKE '%20131002T000000.tif'")
+
+
+Creating layergroups
+====================
+A layergroup can be setup by providing a list of layers and the related styles to the catalog. 
+In the next example, a layergroup with 3 layers and their associated styles get created.
+
+.. code-block:: python
+
+    workspace = 'my_workspace'
+    layers_in_group = ['my_workspace:layer_1', 'my_workspace:layer_2', 'my_workspace:layer_3']
+    styles = ['my_workspace:style_1', 'my_workspace:style_2', 'my_workspace:style_3']
+    layergroup_name = 'test_layergroup'
+    
+    layergroup = cat.create_layergroup(layergroup_name, layers_in_group, styles, workspace)
+    # Note that if no bounds are provided, GeoServer will automatically compute the layergroup bounding box
+    cat.save(layergroup)
+
+Nesting layergroups
+^^^^^^^^^^^^^^^^^^^
+A Layergroup can internally contain layergroups too. In the next example an additional layergroup containing
+a ``layer_4`` simple layer plus the previously created ``test_layegroup`` will be created. 
+This time, layer attributes need to be specified. 
+
+.. code-block:: python
+
+    workspace = 'my_workspace'
+    
+    layers = []
+    layers.append({'name':'my_workspace:layer_4', 'attributes':{'type':'layer'}})
+    layers.append({'name':'my_workspace:test_layergroup', 'attributes':{'type':'layerGroup'}})
+
+    # Not specifying the style for the nested layergroup
+    styles = []
+    styles.append('my_workspace:style_4')
+    styles.append(None)
+    layergroup_name = 'outer_layergroup'
+    
+    outer_layergroup = cat.create_layergroup(layergroup_name, layers, styles, workspace)
+    cat.save(outer_layergroup)    
+
+
+
