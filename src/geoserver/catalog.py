@@ -1243,22 +1243,22 @@ class Catalog(object):
             resp = self.http_request(url, headers={"Accept": "application/json"})
             resp.raise_for_status()
             payload = resp.json()['style']
+            extracted_workspace = payload['workspace'].get("name", workspace) if payload.get("workspace") else workspace
             return Style(
                 self,
                 payload['name'],
-                payload['workspace'].get("name", workspace),
+                extracted_workspace,
                 payload['format'] + payload['languageVersion']['version'],
             )
 
         except HTTPError as e:
+            logger.exception(e)
             if resp.status_code == 404:
                 return None
-            else:
-                logger.exception(e)
+            raise e
         except Exception as e:
             logger.exception(e)
             raise e
-        return None
 
     def create_style(
         self,
