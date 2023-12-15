@@ -31,6 +31,7 @@ from geoserver.settings import GlobalSettings
 import os
 import re
 import base64
+from requests.exceptions import HTTPError
 from xml.etree.ElementTree import XML
 from xml.parsers.expat import ExpatError
 import requests
@@ -1213,15 +1214,51 @@ class Catalog(object):
 
     def get_style(self, name, workspace=None, recursive=False):
         """
-        returns a single style object.
+        Get single style from geoserver.
+        Keyword arguments:
+            name(str): name of the style
+        Optional keyword arguments:
+            workspace(str): name of the workspce where the style belong
+        Legacy:
+            recursive(bool): no longer used
+        Return
+            a single style object.
         Will return None if no style is found.
         Will raise an error if more than one style with the same name is found.
         """
 
-        styles = self.get_styles(
-            names=name, workspaces=[workspace], recursive=recursive
-        )
-        return self._return_first_item(styles)
+        if workspace:
+            '''
+            If workspace is passed, we call directly the wanted style
+            '''
+
+            url = f"{self.service_url}/workspaces/{workspace}/styles/{name}.json"
+        else:
+            '''
+            If is not passed, we try to get the style without passing any workspace
+            '''
+            url = f"{self.service_url}/styles/{name}.json"
+
+        try:
+            resp = self.http_request(url, headers={"Accept": "application/json"})
+            resp.raise_for_status()
+            payload = resp.json()['style']
+            return Style(
+                self,
+                payload['name'],
+                payload['workspace'].get("name", workspace),
+                payload['format'] + payload['languageVersion']['version'],
+            )
+
+        except HTTPError as e:
+            if resp.status_code == 404:
+                return None
+            else:
+                logger.exception(e)
+        except Exception as e:
+            logger.exception(e)
+            raise e
+        return None
 
     def create_style(
         self,
