@@ -1259,6 +1259,27 @@ class Catalog(object):
         except Exception as e:
             logger.exception(e)
             raise e
+    
+    def delete_style(self, name, workspace=None, purge=True):
+        if workspace:
+            '''
+            If workspace is passed, we call directly the wanted style
+            '''
+            url = f"{self.service_url}/workspaces/{workspace}/styles/{name}?purge={purge}"
+        else:
+            '''
+            If is not passed, we try to get the style without passing any workspace
+            '''
+            url = f"{self.service_url}/styles/{name}?purge={purge}"
+            
+        try:
+            resp = self.http_request(url, method="DELETE")
+            if resp.status_code != 404:
+                resp.raise_for_status()
+            return resp.status_code == 201
+        except Exception as e:
+            logger.exception(e)
+            raise e
 
     def create_style(
         self,
