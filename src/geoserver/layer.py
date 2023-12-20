@@ -166,7 +166,7 @@ class Layer(ResourceInfo):
             atom_link = [n for n in element if "href" in n.attrib]
             if atom_link and ws_name is None:
                 ws_name = workspace_from_url(atom_link[0].get("href"))
-            return self.catalog.get_styles(
+            return self.catalog.get_style(
                 names=style_name, workspaces=ws_name, recursive=recursive
             )[0]
         return None
