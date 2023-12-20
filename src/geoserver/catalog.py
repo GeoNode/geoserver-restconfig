@@ -1281,9 +1281,9 @@ class Catalog(object):
         style_format="sld10",
         raw=False,
     ):
-        styles = self.get_styles(names=name, workspaces=[workspace], recursive=True)
-        if len(styles) > 0:
-            style = styles[0]
+        styles = self.get_style(names=name, workspaces=workspace, recursive=True)
+        if styles:
+            style = styles
         else:
             style = None
 
