@@ -1227,17 +1227,8 @@ class Catalog(object):
         Will raise an error if more than one style with the same name is found.
         """
 
-        if workspace:
-            '''
-            If workspace is passed, we call directly the wanted style
-            '''
-
-            url = f"{self.service_url}/workspaces/{workspace}/styles/{name}.json"
-        else:
-            '''
-            If is not passed, we try to get the style without passing any workspace
-            '''
-            url = f"{self.service_url}/styles/{name}.json"
+        url = f"{self.service_url}/workspaces/{workspace}/styles/{name}.json" if workspace
+              else f"{self.service_url}/styles/{name}.json"
 
         try:
             resp = self.http_request(url, headers={"Accept": "application/json"})
@@ -1252,9 +1243,9 @@ class Catalog(object):
             )
 
         except HTTPError as e:
-            logger.exception(e)
             if resp.status_code == 404:
                 return None
+            logger.exception(e)
             raise e
         except Exception as e:
             logger.exception(e)
