@@ -168,7 +168,7 @@ class Layer(ResourceInfo):
                 ws_name = workspace_from_url(atom_link[0].get("href"))
             return self.catalog.get_style(
                 name=style_name, workspace=ws_name, recursive=recursive
-            )[0]
+            )
         return None
 
     def _set_default_style(self, style):
