@@ -1227,7 +1227,7 @@ class Catalog(object):
         Will raise an error if more than one style with the same name is found.
         """
 
-        url = f"{self.service_url}/workspaces/{workspace}/styles/{name}.json" if workspace
+        url = f"{self.service_url}/workspaces/{workspace}/styles/{name}.json" if workspace \
               else f"{self.service_url}/styles/{name}.json"
 
         try:
