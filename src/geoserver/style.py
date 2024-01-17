@@ -25,6 +25,7 @@ class Style(ResourceInfo):
         "sld11": "application/vnd.ogc.se+xml",
         "zip10": "application/zip",
         "css10": "application/vnd.geoserver.geocss+css",
+        "sld1.0.0": "application/vnd.ogc.sld+xml",
     }
 
     def __init__(self, catalog, name, workspace=None, style_format="sld10"):
