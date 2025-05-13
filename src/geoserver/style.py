@@ -19,12 +19,13 @@ except ImportError:
 
 
 class Style(ResourceInfo):
-    supported_formats = ["sld10", "sld11", "zip10", "css10", "sld1.0.0", "sld1.1.0"]
+    supported_formats = ["sld10", "sld11", "zip10", "css10", "css1.0.0", "sld1.0.0", "sld1.1.0"]
     content_types = {
         "sld10": "application/vnd.ogc.sld+xml",
         "sld11": "application/vnd.ogc.se+xml",
         "zip10": "application/zip",
         "css10": "application/vnd.geoserver.geocss+css",
+        "css1.0.0": "application/vnd.geoserver.geocss+css",
         "sld1.0.0": "application/vnd.ogc.sld+xml",
         "sld1.1.0": "application/vnd.ogc.se+xml",
     }
