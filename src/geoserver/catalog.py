@@ -1311,6 +1311,7 @@ class Catalog(object):
                 )
 
         if style:
+            style.style_format = style_format
             headers = {"Content-type": style.content_type, "Accept": "application/xml"}
 
             body_href = style.body_href
