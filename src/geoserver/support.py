@@ -797,3 +797,52 @@ def resource_from_url(url, workspace):
         return split_path[split_path.index(resource_type) + 1]
     else:
         return None
+
+
+def parse_restrictions(dom):
+    """
+    Parses attribute schema information, including restrictions, from the
+    WFS DescribeFeatureType XML response (XSD).
+    """
+    if dom is None:
+        return None
+
+    attributes = {}
+    ns = {'xsd': 'http://www.w3.org/2001/XMLSchema'}
+    
+    # all top-level element declarations for attributes
+    for element in dom.findall('.//xsd:element', ns):
+        name = element.get('name')
+        if not name:
+            continue
+
+        attr_info = {}
+        restrictions = {}
+
+        restriction = element.find('.//xsd:restriction', ns)
+        if restriction is not None:
+            base_type = restriction.get('base')
+            if base_type:
+                attr_info['type'] = base_type.split(':')[-1]
+
+            # Check for range restrictions (min/maxInclusive)
+            min_node = restriction.find('xsd:minInclusive', ns)
+            max_node = restriction.find('xsd:maxInclusive', ns)
+            if min_node is not None and max_node is not None:
+                restrictions['range'] = {
+                    'min': min_node.get('value'),
+                    'max': max_node.get('value')
+                }
+
+            # Check for enumeration restrictions
+            options = [s.get('value') for s in restriction.findall('xsd:enumeration', ns)]
+            if options:
+                restrictions['enumeration'] = options
+        
+        if restrictions:
+            attr_info['restrictions'] = restrictions
+            
+        if attr_info:
+            attributes[name] = attr_info
+
+    return attributes
