@@ -22,7 +22,6 @@ setup(
         "requests >= 2.14.0",
         "gisdata >= 0.5.4",
         "six >= 1.12.0",
-        "future",
     ],
     package_dir={"": "src"},
     packages=find_packages("src"),
