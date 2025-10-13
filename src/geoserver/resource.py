@@ -12,9 +12,12 @@
 from six import string_types
 
 try:
-    from urllib.parse import urljoin
+    from urllib.parse import urljoin, urlencode
 except BaseException:
     from urlparse import urljoin
+    from urllib import urlencode
+from xml.parsers.expat import ExpatError
+from xml.etree.ElementTree import fromstring, ParseError
 
 from geoserver.support import (
     ResourceInfo,
@@ -29,6 +32,7 @@ from geoserver.support import (
     attribute_list,
     write_bool,
     build_url,
+    parse_restrictions
 )
 
 try:
@@ -161,6 +165,34 @@ class FeatureType(_ResourceBase):
     attributes = xml_property("attributes", attribute_list)
     metadata_links = xml_property("metadataLinks", metadata_link_list)
     metadata = xml_property("metadata", metadata)
+
+    @property
+    def attributes_restrictions(self):
+        """
+        Fetches and parses attribute restrictions from the WFS DescribeFeatureType
+        request.
+        """
+        if not self.dom:
+            self.fetch()
+        base_url = self.catalog.service_url.rsplit('/', 1)[0]
+        wfs_url = f"{base_url}/wfs"
+        type_name = f"{self.workspace.name}:{self.name}"
+        params = {
+            'service': 'WFS',
+            'version': '1.0.0',
+            'request': 'DescribeFeatureType',
+            'typeName': type_name
+        }
+        wfs_url_with_params = f"{wfs_url}?{urlencode(params)}"
+        resp = self.catalog.http_request(wfs_url_with_params)
+        
+        if resp.status_code != 200:
+            raise Exception(f"Failed to get DescribeFeatureType from WFS: {resp.status_code}, {resp.text}")
+        try:
+            xml_tree = fromstring(resp.content)
+            return parse_restrictions(xml_tree)
+        except (ParseError, ExpatError) as e:
+            raise Exception(f"Failed to parse DescribeFeatureType XML: {e}")
 
     writers = {
         "name": write_string("name"),
