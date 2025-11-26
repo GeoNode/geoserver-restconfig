@@ -8,6 +8,7 @@
 # LICENSE.txt file in the root directory of this source tree.
 #
 #########################################################################
+import json
 try:
     from urllib.parse import urljoin
 except BaseException:
@@ -240,3 +241,72 @@ class Layer(ResourceInfo):
         "default_style": _write_default_style,
         "alternate_styles": _write_alternate_styles,
     }
+
+    def recalc_bbox(self, force_bbox=None):
+        """
+        Recalculate or update the BBOX of this layer (vector or raster) on GeoServer.
+        Automatically detects whether the underlying resource is a featureType or coverage.
+        """
+        resource = self.resource  # FeatureType or Coverage
+        catalog = self.catalog
+
+        # Detect resource type (raster or vector)
+        is_raster = resource.resource_type == "coverage"
+
+        workspace = resource.workspace.name
+        store = resource.store.name 
+        name = resource.name
+
+        service = catalog.service_url.rstrip("/")
+
+        if is_raster:
+            # Raster >> coverage endpoint
+            base = (
+                f"{service}/workspaces/{workspace}/coveragestores/{store}/coverages/{name}"
+            )
+            node = "coverage"
+            param = "calculate"
+        else:
+            # Vector >> featureType endpoint
+            base = (
+                f"{service}/workspaces/{workspace}/datastores/{store}/featuretypes/{name}"
+            )
+            node = "featureType"
+            param = "recalculate"
+
+        # Build request
+        if force_bbox is None:
+            # Ask GeoServer to recalc
+            url = f"{base}?{param}=nativebbox,latlonbbox"
+            body = {node: {}}
+        else:
+            # Force client-provided bbox
+            minx, miny, maxx, maxy = force_bbox
+            crs = resource.projection or "EPSG:4326"
+            url = base
+            body = {
+                node: {
+                    "nativeBoundingBox": {
+                        "minx": minx, "miny": miny,
+                        "maxx": maxx, "maxy": maxy,
+                        "crs": crs,
+                    },
+                    "latLonBoundingBox": {
+                        "minx": minx, "miny": miny,
+                        "maxx": maxx, "maxy": maxy,
+                        "crs": "EPSG:4326",
+                    },
+                }
+            }
+
+        # Execute request
+        headers = {"Content-Type": "application/json"}
+        resp = catalog.http_request(
+            url,
+            method="put",
+            data=json.dumps(body),  # JSON must be dumped
+            headers=headers,
+        )
+        return resp.status_code in (200, 201)
+
+
